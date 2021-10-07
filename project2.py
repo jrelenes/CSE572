@@ -18,7 +18,9 @@ from datetime import datetime as dt
 from datetime import datetime, timedelta
 import numpy as np
 import pickle
+import pickle_compat
 
+pickle_compat.patch()
 #import matplotlib.pyplot as plt
 #from numpy import loadtxt
 #from keras.models import Sequential

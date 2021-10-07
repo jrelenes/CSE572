@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
-#! /usr/bin/env python3
-# In[92]:
+
+# In[44]:
 
 
 import csv
 from csv import reader
 import datetime
 import pickle
+import numpy as np
 from sklearn.decomposition import PCA
 import pickle_compat
-import numpy as np
-
-pickle_compat.patch()
-
-#import pickle_compat
 #pickle_compat.patch()
+import pandas as pd
+import pandas as df
+import pickle_compat
+pickle_compat.patch()
+import pickle
 
 
-# In[93]:
+# In[45]:
 
 
 def ReadXlsx():
@@ -33,13 +34,13 @@ def ReadXlsx():
     return testArray
 
 
-# In[94]:
+# In[46]:
 
 
 test = ReadXlsx()
 
 
-# In[95]:
+# In[47]:
 
 
 testValues = []
@@ -52,13 +53,8 @@ for i in test:
         arr.append(float(j))
         
     testValues.append(arr)
-    
-#print(testValues[0])
-#print(testValues[-1])
-#print(len(testValues))
 
-
-# In[96]:
+# In[48]:
 
 
 def Tester(array):
@@ -66,30 +62,31 @@ def Tester(array):
     predictedLabels = []
     array = np.array(array)
     X_test = array
+    print(X_test.shape)
 
-    pca = PCA(n_components=0.95)# adjust yourself
+
+    pca = PCA(n_components='mle')# adjust yourself
     pca.fit(X_test)
-
 
     X_t_test = pca.transform(X_test)
 
     
     with open ('model_pickle', 'rb') as filename:
-    	modelRetrieved = pickle.load(filename)
-    	prediction = modelRetrieved.predict(X_t_test)
-    	predictedLabels = prediction
+        modelRetrieved = pickle.load(filename)
+        prediction = modelRetrieved.predict(X_t_test)
+        predictedLabels = prediction
     
     return predictedLabels
         
 
 
-# In[97]:
+# In[49]:
 
 
 labels = Tester(testValues)
 
 
-# In[98]:
+# In[50]:
 
 
 #print(labels)

@@ -17,6 +17,7 @@ import pandas as df
 import pickle_compat
 pickle_compat.patch()
 import pickle
+from sklearn.neural_network import MLPClassifier
 
 
 

@@ -21,6 +21,8 @@ import pickle
 import pickle_compat
 import csv
 
+from sklearn.neural_network import MLPClassifier
+
 pickle_compat.patch()
 #import matplotlib.pyplot as plt
 #from numpy import loadtxt
@@ -421,7 +423,12 @@ def Trainer(array1, array12, array0, array02):
     X_t_test = pca.transform(X_test)
 
     #gamma = 'scale' = 22/30
-    clf = SVC(kernel='rbf', gamma = 'scale')
+    #clf = SVC(kernel='rbf', gamma = 'scale')
+    clf = MLPClassifier(hidden_layer_sizes=(100), activation='relu', solver='adam', 
+            alpha=0.0001, batch_size='auto', learning_rate='adaptive', learning_rate_init=0.001, 
+            power_t=0.5, max_iter=1800, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, 
+            momentum=0.7, nesterovs_momentum=True, early_stopping=False, validation_fraction=0.1, beta_1=0.9, 
+            beta_2=0.999, epsilon=1e-08, n_iter_no_change=30)
         
     clf.fit(X_t_train, y_train)
     

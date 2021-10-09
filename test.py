@@ -68,7 +68,7 @@ def Tester(array):
     print(X_test.shape)
 
 
-    pca = PCA(n_components='mle')# adjust yourself
+    pca = PCA(n_components=22)# adjust yourself
     pca.fit(X_test)
 
     X_t_test = pca.transform(X_test)
@@ -78,6 +78,11 @@ def Tester(array):
         modelRetrieved = pickle.load(filename)
         prediction = modelRetrieved.predict(X_t_test)
         predictedLabels = prediction
+    # f = open('model_pickle.p', 'wb')   # Pickle file is newly created where foo1.py is
+    # modelRetrieved = pickle.load(f)          # dump data to f
+    # f.close()
+    # prediction = modelRetrieved.predict(X_t_test)
+    # predictedLabels = prediction
     
     return predictedLabels
         

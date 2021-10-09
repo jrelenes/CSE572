@@ -423,12 +423,12 @@ def Trainer(array1, array12, array0, array02):
     X_t_test = pca.transform(X_test)
 
     #gamma = 'scale' = 22/30
-    #clf = SVC(kernel='rbf', gamma = 'scale')
-    clf = MLPClassifier(hidden_layer_sizes=(100), activation='relu', solver='adam', 
-            alpha=0.0001, batch_size='auto', learning_rate='adaptive', learning_rate_init=0.001, 
-            power_t=0.5, max_iter=1800, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, 
-            momentum=0.7, nesterovs_momentum=True, early_stopping=False, validation_fraction=0.1, beta_1=0.9, 
-            beta_2=0.999, epsilon=1e-08, n_iter_no_change=30)
+    clf = SVC(kernel='rbf', gamma = 'scale')
+    # clf = MLPClassifier(hidden_layer_sizes=(100), activation='relu', solver='adam', 
+    #         alpha=0.0001, batch_size='auto', learning_rate='adaptive', learning_rate_init=0.001, 
+    #         power_t=0.5, max_iter=1800, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, 
+    #         momentum=0.7, nesterovs_momentum=True, early_stopping=False, validation_fraction=0.1, beta_1=0.9, 
+    #         beta_2=0.999, epsilon=1e-08, n_iter_no_change=30)
         
     clf.fit(X_t_train, y_train)
     
@@ -460,7 +460,7 @@ def Trainer(array1, array12, array0, array02):
 # In[170]:
 
 
-def trimDates(Data,deltaHoursLower,deltaHoursUpper):
+def trimDates(Data,deltaHoursLower,deltaHoursUpper,meal30min):
     
     dataShift = []
         
@@ -479,12 +479,13 @@ def trimDates(Data,deltaHoursLower,deltaHoursUpper):
 
         start = datetime.strptime(date_1, date_format_str)
 
-        lowerTime = start + timedelta(hours=deltaHoursLower)
+        lowerTime = start + timedelta(hours=deltaHoursLower) - timedelta(hours=meal30min)
         upperTime = start + timedelta(hours=deltaHoursUpper)
 
         dataShift.append([lowerTime,upperTime])
         
     return dataShift
+
 
 
 # In[171]:
@@ -595,13 +596,13 @@ def Features(featureSpace):
                 array.append(slope[5])
                 array.append(slope[6])
                 array.append(slope[7])
-                array.append(slope[8])
-                array.append(slope[9])
-                array.append(slope[10])
-                array.append(slope[11])
-                array.append(slope[12])
-                array.append(slope[13])
-                array.append(slope[14])
+                array.append(slope[-7])
+                array.append(slope[-6])
+                array.append(slope[-5])
+                array.append(slope[-4])
+                array.append(slope[-3])
+                array.append(slope[-2])
+                array.append(slope[-1])
 
                 
                 # array.append(gradients[0])
@@ -719,12 +720,12 @@ def extraction(data):
 mealData, noMealData = extraction(DataClean)
 mealData2, noMealData2 = extraction(DataClean2)
 
-meals = trimDates(mealData,0,2)
-noMeals = trimDates(noMealData,2,4)
+meals = trimDates(mealData,0,2, 0.5)
+noMeals = trimDates(noMealData,2,4,0)
 
 
-meals2 = trimDates(mealData2,0,2)
-noMeals2 = trimDates(noMealData2,2,4)
+meals2 = trimDates(mealData2,0,2,0.5)
+noMeals2 = trimDates(noMealData2,2,4,0)
 
 #print(meals[0])
 #print(len(meals))

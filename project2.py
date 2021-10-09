@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pickle
 import pickle_compat
+import csv
 
 pickle_compat.patch()
 #import matplotlib.pyplot as plt
@@ -27,7 +28,99 @@ pickle_compat.patch()
 #from keras.layers import Dense
 
 # In[20]:
+def readCSV(cgm, insulin):
+    
+    filename1 = open(cgm,'r')
+    filename2 = open(insulin,'r')
+    date_format_str = '%d/%m/%Y %H:%M:%S'
 
+    
+    CGMData = []
+    
+    for col in csv.DictReader(filename1):
+        row = []
+        row.append(col['Date'])
+        row.append(col['Time'])
+        row.append(col['Sensor Glucose (mg/dL)'])
+        row.append(col['ISIG Value'])
+        CGMData.append(row)
+        
+    CGMData = CGMData[::-1]
+    
+    CGMDataClean = []
+    for i in CGMData:
+        arr = []
+        month = int(str(i[0]).split('/',3)[0])
+        day = int(str(i[0]).split('/',3)[1])
+        year = int(str(i[0]).split('/',3)[2])
+        hour = int(str(i[1]).split(':',3)[0])
+        minute = int(str(i[1]).split(':',3)[1])
+        second = int(str(i[1]).split(':',3)[2])
+        date = str(day) + '/'+ str(month) +'/'+ str(year) + ' ' +str(hour)+':'+ str(minute)+':'+ str(second)
+        dateAndTime = datetime.strptime(date, date_format_str)
+        
+        arr.append(dateAndTime)
+                
+        if i[2].strip() and i[3].strip():
+            arr.append(float(i[2]))
+            arr.append(float(i[3]))
+            CGMDataClean.append(arr)
+            
+            
+    
+    
+    InsulinData = []
+    
+    for col in csv.DictReader(filename2):
+        row = []
+        row.append(col['Date'])
+        row.append(col['Time'])
+        row.append(col['BWZ Carb Input (grams)'])
+        InsulinData.append(row)
+        
+    InsulinData = InsulinData[::-1]
+    
+    
+    InsulinDataClean = []
+    
+    for i in InsulinData:
+        row = []
+        row2 = []
+        date = []
+        time = []
+        
+        month = int(str(i[0]).split('/',3)[0])
+        day = int(str(i[0]).split('/',3)[1])
+        year = int(str(i[0]).split('/',3)[2])
+        hour = int(str(i[1]).split(':',3)[0])
+        minute = int(str(i[1]).split(':',3)[1])
+        second = int(str(i[1]).split(':',3)[2])
+        #[[[2017, 9, 5], [13, 14, 52]], 38.0]
+        date.append(year)
+        date.append(month)
+        date.append(day)
+        
+        time.append(hour)
+        time.append(minute)
+        time.append(second)
+#         print(col,time)
+
+ 
+        row.append(date)
+        row.append(time)
+        row2.append(row)
+        
+        if i[2].strip():
+            
+            if float(i[2]) > 0 :
+                row2.append(float(i[2]))
+                
+                InsulinDataClean.append(row2)
+        
+            
+            
+    return InsulinDataClean, CGMDataClean
+            
 
 def formatDateTimeCGM(CGMData):
     
@@ -229,83 +322,120 @@ def separateDate(Data,Data1,disregard,keep, mealData, noMealData):
 
     
     
-    
-    if (diff_in_hours > 2 and disregard[-2] == False) or keep[-2] == True:
-        mealData.append(Data)
         
-    if diff_in_hours > 2 and keep[-2] == False:
-        noMealData.append(Data)
+    ###############################################    
+    if len(keep) >= 2:
         
+        if (diff_in_hours > 2 and disregard[-2] == False) or keep[-2] == True:
+            mealData.append(Data)
+        
+        if diff_in_hours > 2 and keep[-2] == False:
+            noMealData.append(Data)
+                
+    else:
+            
+        if diff_in_hours > 2:
+            noMealData.append(Data)
+            
+        if diff_in_hours > 2 and disregard[-2] == False:
+            mealData.append(Data)
+            
+    ####################################################    
     if diff_in_hours == 2 and disregard[-2] == False:
         mealData.append(Data)
-
         
 
 
 # In[169]:
 
 
-def Trainer(array1, array0):
+def Trainer(array1, array12, array0, array02):
+    
     
     array0 = np.array(array0)
+    array02 = np.array(array02)
+
     array1 = np.array(array1)
+    array12 = np.array(array12)
 
-    noMeal = (array0 - np.mean(array0, axis=0))/np.std(array0,axis =0)
-    meal = (array1 - np.mean(array1, axis=0))/np.std(array1,axis =0)
-
-    X_train = np.concatenate((noMeal,meal), axis=0)
-
-    # print(len(X_train))
-    # print(X_train[0])
-    # print(X_train[-1])
-
-    #####################
-    #np.savetxt('test.csv', X_train, delimiter=',')
     
+    # array0 = (array0 - np.mean(array0, axis=0))/np.std(array0,axis =0)
+    # array1 = (array1 - np.mean(array1, axis=0))/np.std(array1,axis =0)
     
-    ######################
+    # array02 = (array02 - np.mean(array02, axis=0))/np.std(array02,axis =0)
+    # array12 = (array12 - np.mean(array12, axis=0))/np.std(array12,axis =0)
+    
+
+    X_train = np.concatenate((array0,array02,array1,array12), axis=0)
+
 
     labels_0_tr = np.array([0]*array0.shape[0])
     labels_1_tr = np.array([1]*array1.shape[0])
+    labels_02_tr = np.array([0]*array02.shape[0])
+    labels_12_tr = np.array([1]*array12.shape[0])
+
+    #the testing classes are grouped under one vector
+    y_train = np.concatenate((labels_0_tr,labels_02_tr,labels_1_tr,labels_12_tr), axis=0)
+    
+    
+    X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, 
+            train_size = 0.8,test_size=.20, random_state=10, shuffle=True, stratify=None)
+
+    
+    
+    
+
+    #X_train = (X_train - np.mean(X_train, axis=0))/np.std(X_train,axis =0)
+
+    
+    
+    #np.savetxt('test.csv', X_train, delimiter=',')
+    
+    ######################
+
+    #labels_0_tr = np.array([0]*allNoMeals.shape[0])
+    #labels_1_tr = np.array([1]*allMeals.shape[0])
 
     
     #the testing classes are grouped under one vector
-    y_train = np.concatenate((labels_0_tr,labels_1_tr), axis=0)
+    #y_train = np.concatenate((labels_0_tr,labels_1_tr), axis=0)
     
+    
+    
+    #X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=.20)
 
-    X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=.20)
-
+#     print(X_test.shape)
+#     print(X_test[0])
+#     print(X_test[-1])
+    
+    #22
     pca = PCA(n_components='mle')# adjust yourself
     pca.fit(X_train)
     pca.fit(X_test)
     
+    #switch to 20 and set gamma to scale
+
 
     X_t_train = pca.transform(X_train)
+
     X_t_test = pca.transform(X_test)
 
-    clf = SVC(kernel='rbf', gamma=0.99)
-    
-
-
-   
-    #0.96,1    ,1,     1,   1
-    #0.53,0.42, 0.53,0.539,0.44
-
-    #0.46,  0.46, 0.488,0.46,0.51  
-    #0.429,0.53,0.492,0.54,0.47
-    
-    #0.57,0.60,0.61,0.64
-    #0.46,0.51,0.65,0.62    
+    #gamma = 'scale' = 22/30
+    clf = SVC(kernel='rbf', gamma = 'scale')
+        
     clf.fit(X_t_train, y_train)
+    
+#     plot_decision_regions(X_t_train, y_train, clf=clf, legend=2)
+#     plt.show()
     #print('score', clf.score(X_t_test, y_test))
     #print('pred label', clf.predict(X_t_test))
         
-    # with open ('model_pickle', 'wb') as filename:
-    #     pickle.dump(clf,filename)
+    with open ('model_pickle', 'wb') as filename:
+        pickle.dump(clf,filename)
         
-    f = open('model_pickle', 'wb')   # Pickle file is newly created where foo1.py is
-    pickle.dump(clf, f)          # dump data to f
-    f.close()
+#     f = open('model_pickle.p', 'wb')   # Pickle file is newly created where foo1.py is
+#     pickle.dump(clf, f, -1)          # dump data to f
+#     f.close()
  
         
     meanTrainingAccuracy = 0
@@ -316,8 +446,8 @@ def Trainer(array1, array0):
         meanTestingAccuracy += clf.score(X_t_test, y_test)
             #print('pred label', modelRetrieved.predict(X_t_test))
 
-    #print(meanTrainingAccuracy/10)
-    #print(meanTestingAccuracy/10)
+    print(meanTrainingAccuracy/10)
+    print(meanTestingAccuracy/10)
 
 
 # In[170]:
@@ -351,6 +481,48 @@ def trimDates(Data,deltaHoursLower,deltaHoursUpper):
 
 
 # In[171]:
+def calculatesSlopes(i):
+
+    array = []
+
+    if len(i[1]) >= 3:
+
+            numbers = np.array(i[1])
+            n = 15
+
+            indices = (-numbers).argsort()[:n]
+                    
+            for j in indices:
+                            
+                    if j + 2 < len(i[1]):
+                                
+                        largestGlucose = i[1][j]
+                        largestIndex = j
+                
+                        diff_in_hours = i[0][j+2] - i[0][largestIndex]
+                        diff_in_hours = diff_in_hours.total_seconds() / 3600
+                        
+                        slope3 = (largestGlucose +i[1][largestIndex+2] - 2*i[1][largestIndex+1]) / diff_in_hours
+                            
+                        array.append(round(slope3,3))
+                        array.append(j)
+                        
+                    else:
+                        
+                        largestGlucose = i[1][j]
+                        largestIndex = j
+                
+                        diff_in_hours = i[0][largestIndex] - i[0][j-2]
+                        diff_in_hours = diff_in_hours.total_seconds() / 3600
+                        
+                        slope3 = (largestGlucose +i[1][largestIndex-2] - 2*i[1][largestIndex-1]) / diff_in_hours
+                            
+                        array.append(round(slope3,3))
+                        array.append(j)
+                        
+                        
+                                
+    return array
 
 
 def Features(featureSpace):
@@ -363,6 +535,13 @@ def Features(featureSpace):
         array.append( max(i[1]) - min(i[1]))
         indexMax = i[1].index(max(i[1]))
         indexMin = i[1].index(min(i[1]))
+        ################################
+        array.append(max(i[1]))
+        array.append(indexMax)
+        array.append(min(i[1]))
+        array.append(indexMin)
+
+        ################################
         higher = i[0][indexMax]
         lower = i[0][indexMin]
         
@@ -370,7 +549,7 @@ def Features(featureSpace):
         diff_in_hours = diff.total_seconds() / 3600
 
         #print(i[0][index])
-        array.append(diff_in_hours)
+        array.append(round(diff_in_hours,3))
         
         signal = np.array(i[1], dtype=float)
         fourier = np.fft.fft(signal)
@@ -383,16 +562,24 @@ def Features(featureSpace):
         f = np.array(i[1], dtype=float)
         x = np.arange(f.size)
         
+        gradients = []
+        
         if len(freq) >= 4 and len(x) > 4:
             
-            array.append(freq[1])
-            array.append(freq[2])
-            array.append(freq[3])
+            array.append(round(freq[1],3))
+            array.append(round(freq[2],3))
+            array.append(round(freq[3],3))
            
             slope = np.gradient(f,x)        
             
-            if len(slope) >= 20:
+            if len(slope) >= 15:
+                ################################
+                    
+                gradients = calculatesSlopes(i)
                 
+                ####################################
+                        
+                                #19
                 array.append(slope[0])
                 array.append(slope[1])
                 array.append(slope[2])
@@ -408,12 +595,32 @@ def Features(featureSpace):
                 array.append(slope[12])
                 array.append(slope[13])
                 array.append(slope[14])
-                array.append(slope[15])
-                array.append(slope[16])
-                array.append(slope[17])
-                array.append(slope[18])
 
                 
+                # array.append(gradients[0])
+                # array.append(gradients[1])
+                # array.append(gradients[2])
+                        
+                # array.append(gradients[3])
+                # array.append(gradients[4])
+                # array.append(gradients[5])
+                
+                # array.append(gradients[6])
+                # array.append(gradients[7])
+                # array.append(gradients[8])
+                
+                
+                # array.append(gradients[9])
+                # array.append(gradients[10])
+                # array.append(gradients[11])
+                
+                # array.append(gradients[12])
+                # array.append(gradients[13])
+                # array.append(gradients[14])
+                
+
+                        #array.append(gradients[1])
+                        #array.append(gradients[2])
                 featuresForEachMeal.append(array)
               
               
@@ -465,7 +672,7 @@ def dataForFeatures(featureSpace, LabelRange):
 
 
 DataClean, CGMDateAndFood= ReadXlsx('CGMData670GPatient3.xlsx','InsulinAndMealIntake670GPatient3.xlsx')
-
+DataClean2, CGMDateAndFood2 = readCSV( 'CGMData.csv', 'InsulinData.csv')
 #print(len(DataClean))
 #print(DataClean[0])
 #print(CGMDateAndFood[0])
@@ -483,24 +690,34 @@ DataClean, CGMDateAndFood= ReadXlsx('CGMData670GPatient3.xlsx','InsulinAndMealIn
 # In[175]:
 
 
-disregard = [False]
-keep = [False]
-mealData = []
-noMealData = []
+def extraction(data):
 
-
-for i in range(0, len(DataClean), 1):
+    disregard = [False]
     
-    if i < len(DataClean) - 1:
-        separateDate(DataClean[i][0],DataClean[i+1][0],disregard,keep, mealData, noMealData)
-            
+    keep = [False]
+    mealData = []
+    noMealData = []
 
+    for i in range(0, len(data), 1):
+
+
+        if i < len(data) - 1:
+            
+             separateDate(data[i][0],data[i+1][0],disregard,keep, mealData, noMealData)
+            
+    
+    return mealData, noMealData
 
 # In[176]:
-
+mealData, noMealData = extraction(DataClean)
+mealData2, noMealData2 = extraction(DataClean2)
 
 meals = trimDates(mealData,0,2)
 noMeals = trimDates(noMealData,2,4)
+
+
+meals2 = trimDates(mealData2,0,2)
+noMeals2 = trimDates(noMealData2,2,4)
 
 #print(meals[0])
 #print(len(meals))
@@ -532,6 +749,8 @@ noMeals = trimDates(noMealData,2,4)
 mealpreFeatureData = dataForFeatures(CGMDateAndFood, meals)
 noMealpreFeatureData = dataForFeatures(CGMDateAndFood, noMeals)
 
+mealpreFeatureData2 = dataForFeatures(CGMDateAndFood2, meals2)
+noMealpreFeatureData2 = dataForFeatures(CGMDateAndFood2, noMeals2)
 
 # In[180]:
 
@@ -553,6 +772,9 @@ noMealpreFeatureData = dataForFeatures(CGMDateAndFood, noMeals)
 meal = Features(mealpreFeatureData)
 noMeal = Features(noMealpreFeatureData)
 
+meal2 = Features(mealpreFeatureData2)
+noMeal2 = Features(noMealpreFeatureData2)
+
 #print(meal[0])
 #print(features[0])
 
@@ -567,7 +789,7 @@ noMeal = Features(noMealpreFeatureData)
 # In[182]:
 
 
-Trainer(meal,noMeal)
+Trainer(meal,meal2,noMeal,noMeal2)
 
 
 # In[ ]:
@@ -595,7 +817,3 @@ Trainer(meal,noMeal)
 
 
 # In[ ]:
-
-
-
-

@@ -263,7 +263,7 @@ def ReadXlsx(CGM,Insulin):
 # In[22]:
 
 
-def separateDate(Data,Data1,disregard,keep, mealData, noMealData):
+def separateDate(Data,Data1,disregard,keep, mealData, noMealData, data,i):
     
     diff_in_hours = 0
         
@@ -309,6 +309,16 @@ def separateDate(Data,Data1,disregard,keep, mealData, noMealData):
     if diff_in_hours < 2:
 
             disregard.append(True)
+            #current workspace
+            ############################
+            if diff_in_hours == 2:
+
+                keep.append(True)
+                
+            else:
+                
+                keep.append(False)
+            ###########################
     
     else:
         
@@ -324,27 +334,29 @@ def separateDate(Data,Data1,disregard,keep, mealData, noMealData):
 
     
     
-        
     ###############################################    
     if len(keep) >= 2:
         
         if (diff_in_hours > 2 and disregard[-2] == False) or keep[-2] == True:
             mealData.append(Data)
-        
-        if diff_in_hours > 2 and keep[-2] == False:
+
+                            #current workspace keep[-2] == true
+        ####################################################    
+        if diff_in_hours == 2 and keep[-2] == True:
+            meal.Data.append(data[i-1][0])
+            mealData.append(Data)
+
+
+        if diff_in_hours >= 4 and keep[-2] == False:
             noMealData.append(Data)
                 
     else:
             
-        if diff_in_hours > 2:
+        if diff_in_hours >= 4:
             noMealData.append(Data)
             
         if diff_in_hours > 2 and disregard[-2] == False:
             mealData.append(Data)
-            
-    ####################################################    
-    if diff_in_hours == 2 and disregard[-2] == False:
-        mealData.append(Data)
         
 
 
@@ -366,22 +378,44 @@ def Trainer(array1, array12, array0, array02):
     
     # array02 = (array02 - np.mean(array02, axis=0))/np.std(array02,axis =0)
     # array12 = (array12 - np.mean(array12, axis=0))/np.std(array12,axis =0)
+    ####################################3
+    meal = np.concatenate((array1,array12), axis=0)
+    noMeal = np.concatenate((array0,array02), axis=0)
+    mealLabels = np.array([1]*meal.shape[0])
+    noMealLabels = np.array([0]*noMeal.shape[0])
+    X_trainMeal, X_testMeal, y_trainMeal, y_testMeal = train_test_split(meal, mealLabels, 
+            train_size = None,test_size=.20, random_state=10, shuffle=True, stratify=None)
+
+    X_trainNoMeal, X_testNoMeal, y_trainNoMeal, y_testNoMeal = train_test_split(noMeal, noMealLabels, 
+            train_size = None,test_size=.20, random_state=10, shuffle=True, stratify=None)
+
     
+    X_train = np.concatenate((X_trainMeal,X_trainNoMeal), axis=0)
+    X_test = np.concatenate((X_testMeal,X_testNoMeal), axis=0)
 
-    X_train = np.concatenate((array0,array02,array1,array12), axis=0)
+    y_train = np.concatenate((y_trainMeal,y_trainNoMeal), axis=0)
+    y_test = np.concatenate((y_testMeal,y_testNoMeal), axis=0)
 
 
-    labels_0_tr = np.array([0]*array0.shape[0])
-    labels_1_tr = np.array([1]*array1.shape[0])
-    labels_02_tr = np.array([0]*array02.shape[0])
-    labels_12_tr = np.array([1]*array12.shape[0])
 
-    #the testing classes are grouped under one vector
-    y_train = np.concatenate((labels_0_tr,labels_02_tr,labels_1_tr,labels_12_tr), axis=0)
+
+
+    #################################    
+
+    # X_train = np.concatenate((array0,array02,array1,array12), axis=0)
+
+
+    # labels_0_tr = np.array([0]*array0.shape[0])
+    # labels_1_tr = np.array([1]*array1.shape[0])
+    # labels_02_tr = np.array([0]*array02.shape[0])
+    # labels_12_tr = np.array([1]*array12.shape[0])
+
+    # #the testing classes are grouped under one vector
+    # y_train = np.concatenate((labels_0_tr,labels_02_tr,labels_1_tr,labels_12_tr), axis=0)
     
     
-    X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, 
-            train_size = 0.8,test_size=.20, random_state=10, shuffle=True, stratify=None)
+    # X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, 
+    #         train_size = 0.8,test_size=.20, random_state=10, shuffle=True, stratify=None)
 
     
     
@@ -588,43 +622,43 @@ def Features(featureSpace):
                 ####################################
                         
                                 #19
-                array.append(slope[0])
-                array.append(slope[1])
-                array.append(slope[2])
-                array.append(slope[3])
-                array.append(slope[4])
-                array.append(slope[5])
-                array.append(slope[6])
-                array.append(slope[7])
-                array.append(slope[-7])
-                array.append(slope[-6])
-                array.append(slope[-5])
-                array.append(slope[-4])
-                array.append(slope[-3])
-                array.append(slope[-2])
-                array.append(slope[-1])
+                # array.append(slope[0])
+                # array.append(slope[1])
+                # array.append(slope[2])
+                # array.append(slope[3])
+                # array.append(slope[4])
+                # array.append(slope[5])
+                # array.append(slope[6])
+                # array.append(slope[7])
+                # array.append(slope[-7])
+                # array.append(slope[-6])
+                # array.append(slope[-5])
+                # array.append(slope[-4])
+                # array.append(slope[-3])
+                # array.append(slope[-2])
+                # array.append(slope[-1])
 
                 
-                # array.append(gradients[0])
-                # array.append(gradients[1])
-                # array.append(gradients[2])
+                array.append(gradients[0])
+                array.append(gradients[1])
+                array.append(gradients[2])
                         
-                # array.append(gradients[3])
-                # array.append(gradients[4])
-                # array.append(gradients[5])
+                array.append(gradients[3])
+                array.append(gradients[4])
+                array.append(gradients[5])
                 
-                # array.append(gradients[6])
-                # array.append(gradients[7])
-                # array.append(gradients[8])
+                array.append(gradients[6])
+                array.append(gradients[7])
+                array.append(gradients[8])
                 
                 
-                # array.append(gradients[9])
-                # array.append(gradients[10])
-                # array.append(gradients[11])
+                array.append(gradients[9])
+                array.append(gradients[10])
+                array.append(gradients[11])
                 
-                # array.append(gradients[12])
-                # array.append(gradients[13])
-                # array.append(gradients[14])
+                array.append(gradients[12])
+                array.append(gradients[13])
+                array.append(gradients[14])
                 
 
                         #array.append(gradients[1])
@@ -712,7 +746,7 @@ def extraction(data):
 
         if i < len(data) - 1:
             
-             separateDate(data[i][0],data[i+1][0],disregard,keep, mealData, noMealData)
+             separateDate(data[i][0],data[i+1][0],disregard,keep, mealData, noMealData,data,i)
             
     
     return mealData, noMealData

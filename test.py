@@ -68,7 +68,7 @@ def Tester(array):
     print(X_test.shape)
 
 
-    pca = PCA(n_components=22)# adjust yourself
+    pca = PCA(n_components=19)# adjust yourself
     pca.fit(X_test)
 
     X_t_test = pca.transform(X_test)

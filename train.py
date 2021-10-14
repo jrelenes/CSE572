@@ -68,7 +68,32 @@ def readCSV(cgm, insulin):
             arr.append(float(i[3]))
             CGMDataClean.append(arr)
             
-            
+    ##############################################
+    glucose = []
+    isgm = []
+    dates = []
+    for i in CGMDataClean:
+        glucose.append(i[1])
+        isgm.append(i[2])
+        dates.append(i[0])
+        
+    cgm = np.array(glucose)
+    isg = np.array(isgm)
+    cgm1 = (cgm - np.mean(cgm, axis=0))/np.std(cgm,axis =0)
+    isg1 = (isg - np.mean(isg, axis=0))/np.std(isg,axis =0)
+    
+    CGMDataClean1 = []
+    for i in range(0, len(CGMDataClean),1):
+        arr = []
+        arr.append(dates[i])
+        arr.append(cgm1[i])
+        arr.append(isg1[i])
+        CGMDataClean1.append(arr)
+        
+    
+    
+    
+    ###############################################
     
     
     InsulinData = []
@@ -122,6 +147,9 @@ def readCSV(cgm, insulin):
             
             
     return InsulinDataClean, CGMDataClean
+            
+        
+
             
 
 def formatDateTimeCGM(CGMData):
@@ -263,101 +291,6 @@ def ReadXlsx(CGM,Insulin):
 # In[22]:
 
 
-def separateDate(Data,Data1,disregard,keep, mealData, noMealData, data,i):
-    
-    diff_in_hours = 0
-        
-    lowerYear = Data[0][0]
-    lowerMonth = Data[0][1]
-    lowerDay = Data[0][2]
-    
-        
-    lowerHour = Data[1][0]
-    lowerMinute = Data[1][1]
-    lowerSecond = Data[1][2]
-    
-    upperYear = Data1[0][0]
-    upperMonth = Data1[0][1]
-    upperDay = Data1[0][2]
-        
-    upperHour = Data1[1][0]
-    upperMinute = Data1[1][1]
-    upperSecond = Data1[1][2]
-        
-    date_1 = str(lowerDay) + '/'+ str(lowerMonth) +'/'+ str(lowerYear) + ' ' +str(lowerHour)+':'+ str(lowerMinute)+':'+ str(lowerSecond)
-    date_2 = str(upperDay) + '/'+ str(upperMonth) +'/'+ str(upperYear) + ' ' +str(upperHour)+':'+ str(upperMinute)+':'+ str(upperSecond)
-    date_format_str = '%d/%m/%Y %H:%M:%S'
-    
-        
-    start = datetime.strptime(date_1, date_format_str)
-    end =   datetime.strptime(date_2, date_format_str)
-    # Get interval between two timstamps as timedelta object
-    diff = end - start
-    # Get interval between two timstamps in hours
-    diff_in_hours = diff.total_seconds() / 3600
-    
-    
-    # The dates and times must be added and subtracted for these ranges
-    # with the other file for creating regions of values above and below the
-    # modfied EatingData datetime
-    
-    #rule 1 of meal
-    #rule no meal rule
-    #no meal time after the first two hours and 30 minutes before the next meal
-   
-        
-    if diff_in_hours < 2:
-
-            disregard.append(True)
-            #current workspace
-            ############################
-            if diff_in_hours == 2:
-
-                keep.append(True)
-                
-            else:
-                
-                keep.append(False)
-            ###########################
-    
-    else:
-        
-            disregard.append(False)
-
-            if diff_in_hours == 2:
-
-                keep.append(True)
-                
-            else:
-                
-                keep.append(False)
-
-    
-    
-    ###############################################    
-    if len(keep) >= 2:
-        
-        if (diff_in_hours > 2 and disregard[-2] == False) or keep[-2] == True:
-            mealData.append(Data)
-
-                            #current workspace keep[-2] == true
-        ####################################################    
-        if diff_in_hours == 2 and keep[-2] == True:
-            meal.Data.append(data[i-1][0])
-            mealData.append(Data)
-
-
-        if diff_in_hours >= 4 and keep[-2] == False:
-            noMealData.append(Data)
-                
-    else:
-            
-        if diff_in_hours >= 4:
-            noMealData.append(Data)
-            
-        if diff_in_hours > 2 and disregard[-2] == False:
-            mealData.append(Data)
-        
 
 
 # In[169]:
@@ -445,7 +378,7 @@ def Trainer(array1, array12, array0, array02):
 #     print(X_test[-1])
     
     #22
-    pca = PCA(n_components=22)# adjust yourself
+    pca = PCA(n_components=19)# adjust yourself
     pca.fit(X_train)
     pca.fit(X_test)
     
@@ -470,7 +403,7 @@ def Trainer(array1, array12, array0, array02):
 #     plt.show()
     #print('score', clf.score(X_t_test, y_test))
     #print('pred label', clf.predict(X_t_test))
-        
+    # print('kkkkkkkkkkkkkkkkkkkkkk')
     with open ('model_pickle', 'wb') as filename:
         pickle.dump(clf,filename)
         
@@ -494,32 +427,6 @@ def Trainer(array1, array12, array0, array02):
 # In[170]:
 
 
-def trimDates(Data,deltaHoursLower,deltaHoursUpper,meal30min):
-    
-    dataShift = []
-        
-    for i in Data:
-    
-        lowerYear = i[0][0]
-        lowerMonth = i[0][1]
-        lowerDay = i[0][2]    
-
-        lowerHour = i[1][0]
-        lowerMinute = i[1][1]
-        lowerSecond = i[1][2]
-
-        date_1 = str(lowerDay) + '/'+ str(lowerMonth) +'/'+ str(lowerYear) + ' ' +str(lowerHour)+':'+ str(lowerMinute)+':'+ str(lowerSecond)
-        date_format_str = '%d/%m/%Y %H:%M:%S'
-
-        start = datetime.strptime(date_1, date_format_str)
-
-        lowerTime = start + timedelta(hours=deltaHoursLower) - timedelta(hours=meal30min)
-        upperTime = start + timedelta(hours=deltaHoursUpper)
-
-        dataShift.append([lowerTime,upperTime])
-        
-    return dataShift
-
 
 
 # In[171]:
@@ -530,47 +437,29 @@ def calculatesSlopes(i):
     if len(i[1]) >= 3:
 
             numbers = np.array(i[1])
-            n = 15
-
-            indices = (-numbers).argsort()[:n]
+            #n = 15
                     
-            for j in indices:
+            for j in range(0,len(i[1]),2):
                             
                     if j + 2 < len(i[1]):
-                                
-                        largestGlucose = i[1][j]
-                        largestIndex = j
-                
-                        diff_in_hours = i[0][j+2] - i[0][largestIndex]
+                        
+                        
+                        diff_in_hours = i[0][j+2] - i[0][j]
                         diff_in_hours = diff_in_hours.total_seconds() / 3600
-                        
-                        slope3 = (largestGlucose +i[1][largestIndex+2] - 2*i[1][largestIndex+1]) / diff_in_hours
-                            
-                        array.append(round(slope3,3))
-                        array.append(j)
-                        
-                    else:
-                        
-                        largestGlucose = i[1][j]
-                        largestIndex = j
-                
-                        diff_in_hours = i[0][largestIndex] - i[0][j-2]
-                        diff_in_hours = diff_in_hours.total_seconds() / 3600
-                        
-                        slope3 = (largestGlucose +i[1][largestIndex-2] - 2*i[1][largestIndex-1]) / diff_in_hours
-                            
-                        array.append(round(slope3,3))
-                        array.append(j)
-                        
+                        slope3 = (i[1][j] +i[1][j+2] - 2*i[1][j+1]) / diff_in_hours
+                        array.append(slope3)
                         
                                 
     return array
 
 
+
 def Features(featureSpace):
+
     
     featuresForEachMeal = []
     for i in featureSpace:
+        
         
         array = []
         #print(max(i[1]) - min(i[1]))
@@ -604,67 +493,111 @@ def Features(featureSpace):
         f = np.array(i[1], dtype=float)
         x = np.arange(f.size)
         
+        x1 = []
+        count = 0.083
+        for h in f:
+            x1.append(count)
+            count += 0.083
+        
+        x1 = np.array(x1)
+        #print(x1.size, f.size)
+        #break
+        #print(modifiedSlope.size)
+        #print(x1.size)
+        #print(f.size)
+        
         gradients = []
         
-        if len(freq) >= 4 and len(x) > 4:
+        
+        #################
+        
+        ###################
+        
+        if len(freq) >= 4 and len(x) > 4 and x1.size > 4:
             
             array.append(round(freq[1],3))
             array.append(round(freq[2],3))
             array.append(round(freq[3],3))
            
-            slope = np.gradient(f,x)        
+            modifiedSlope = np.gradient(f, x1)
+            slope = np.diff(i[1])
+            #print(slope)
             
-            if len(slope) >= 15:
+            if len(modifiedSlope) >= 5:
                 ################################
+                n = 6
+                
+                #grad = calculatesSlopes(i)
+                
+               # grad = np.array(grad)                         
+                         
+                #slopes = (-slope).argsort()[:n]
+#                 plt.plot(slopes,slope[slopes],color='green')
+                zero_crossings = numpy.where(numpy.diff(np.signbit(modifiedSlope)))[0]
+                
+                amplitudes = []
+                
+                for j in zero_crossings:
                     
-                gradients = calculatesSlopes(i)
-                
-                ####################################
+                    amplitude = abs(modifiedSlope[j])
+                    amplitudes.append([j, amplitude])
                         
-                                #19
-                # array.append(slope[0])
-                # array.append(slope[1])
-                # array.append(slope[2])
-                # array.append(slope[3])
-                # array.append(slope[4])
-                # array.append(slope[5])
-                # array.append(slope[6])
-                # array.append(slope[7])
-                # array.append(slope[-7])
-                # array.append(slope[-6])
-                # array.append(slope[-5])
-                # array.append(slope[-4])
-                # array.append(slope[-3])
-                # array.append(slope[-2])
-                # array.append(slope[-1])
 
+                sorted_multi_list = sorted(amplitudes, key=lambda x: x[1])
                 
-                array.append(gradients[0])
-                array.append(gradients[1])
-                array.append(gradients[2])
+               
+                if len(amplitudes) >= 5 and len(i[1]) > 0 and len(i[2]) > 0:
+                    
+                    #print(amplitudes)
+
+                    #plt.plot(range(len(modifiedSlope)),modifiedSlope,label='x',color='red')
+                    #plt.plot(zero_crossings,modifiedSlope[zero_crossings],color='blue')
+
+                    #temp = [sorted_multi_list[-5][0],sorted_multi_list[-4][0],sorted_multi_list[-3][0],sorted_multi_list[-2][0],sorted_multi_list[-1][0]]
+                    #temp1 = [modifiedSlope[sorted_multi_list[-5][0]],modifiedSlope[sorted_multi_list[-4][0]],modifiedSlope[sorted_multi_list[-3][0]],modifiedSlope[sorted_multi_list[-2][0]],modifiedSlope[sorted_multi_list[-1][0]]]
+                    
+                   
+                    #plt.scatter(temp, temp1,color='black')
+
+
+        
+                    array.append(sorted_multi_list[-1][0])
+                    array.append(modifiedSlope[sorted_multi_list[-1][0]])
+                    array.append(sorted_multi_list[-2][0])
+                    array.append(modifiedSlope[sorted_multi_list[-2][0]])
+                    array.append(sorted_multi_list[-3][0])
+                    array.append(modifiedSlope[sorted_multi_list[-3][0]])
+                    
+                    array.append(sorted_multi_list[-4][0])
+                    array.append(modifiedSlope[sorted_multi_list[-4][0]])
+                    array.append(sorted_multi_list[-5][0])
+                    array.append(modifiedSlope[sorted_multi_list[-5][0]])
+                    
+                    
+                    mean = int(np.mean(i[1]))
+                    array.append(mean)
+                    array.append(int(np.mean(i[2])))
+                    array.append(int(np.std(i[1])))
+                    array.append(int(np.std(i[2])))
+
+                    if mean > 180:
+                        array.append(1)
+                    
+                    if mean < 70:
+                        array.append(-1)
                         
-                array.append(gradients[3])
-                array.append(gradients[4])
-                array.append(gradients[5])
-                
-                array.append(gradients[6])
-                array.append(gradients[7])
-                array.append(gradients[8])
-                
-                
-                array.append(gradients[9])
-                array.append(gradients[10])
-                array.append(gradients[11])
-                
-                array.append(gradients[12])
-                array.append(gradients[13])
-                array.append(gradients[14])
-                
+                    if mean >= 70 and mean <= 180:
+                        array.append(0)
 
-                        #array.append(gradients[1])
-                        #array.append(gradients[2])
-                featuresForEachMeal.append(array)
-              
+                    featuresForEachMeal.append(array)
+
+
+                    #plt.show()
+ 
+ 
+
+
+
               
     return featuresForEachMeal
         
@@ -716,6 +649,9 @@ def dataForFeatures(featureSpace, LabelRange):
 #DataClean, CGMDateAndFood= ReadXlsx('CGMData670GPatient3.xlsx','InsulinAndMealIntake670GPatient3.xlsx')
 DataClean, CGMDateAndFood= readCSV('CGM_patient2.csv','Isulin_patient2.csv')
 DataClean2, CGMDateAndFood2 = readCSV( 'CGMData.csv', 'InsulinData.csv')
+
+CGMDateAndFood = CGMDateAndFood[0:10000]
+CGMDateAndFood2 = CGMDateAndFood2[0:40000]
 #print(len(DataClean))
 #print(DataClean[0])
 #print(CGMDateAndFood[0])
@@ -740,30 +676,129 @@ def extraction(data):
     keep = [False]
     mealData = []
     noMealData = []
-
-    for i in range(0, len(data), 1):
-
-
-        if i < len(data) - 1:
+    
+    i = 1
+    
+    while i < len(data) - 1:
+    
             
-             separateDate(data[i][0],data[i+1][0],disregard,keep, mealData, noMealData,data,i)
+            #data[i][0]
+            #data[i+1][0]
+                
+            
+            Year = data[i][0][0][0]
+            Month = data[i][0][0][1]
+            Day = data[i][0][0][2]
+            
+            Hour = data[i][0][1][0]
+            Minute = data[i][0][1][1]
+            Second = data[i][0][1][2]
+            
+        
+        
+            lowerYear = data[i-1][0][0][0]
+            lowerMonth = data[i-1][0][0][1]
+            lowerDay = data[i-1][0][0][2]
+            
+            lowerHour = data[i-1][0][1][0]
+            lowerMinute = data[i-1][0][1][1]
+            lowerSecond = data[i-1][0][1][2]
+
+            upperYear = data[i+1][0][0][0]
+            upperMonth = data[i+1][0][0][1]
+            upperDay = data[i+1][0][0][2]
+
+            upperHour = data[i+1][0][1][0]
+            upperMinute = data[i+1][0][1][1]
+            upperSecond = data[i+1][0][1][2]
+
+            
+            date_1 = str(lowerDay) + '/'+ str(lowerMonth) +'/'+ str(lowerYear) + ' ' +str(lowerHour)+':'+ str(lowerMinute)+':'+ str(lowerSecond)
+            date_2 = str(upperDay) + '/'+ str(upperMonth) +'/'+ str(upperYear) + ' ' +str(upperHour)+':'+ str(upperMinute)+':'+ str(upperSecond)
+            date_3 = str(Day) + '/'+ str(Month) +'/'+ str(Year) + ' ' +str(Hour)+':'+ str(Minute)+':'+ str(Second)
+
+            date_format_str = '%d/%m/%Y %H:%M:%S'
+
+            
+            lower = datetime.strptime(date_1, date_format_str)
+            upper =   datetime.strptime(date_2, date_format_str)
+            current =   datetime.strptime(date_3, date_format_str)
+
+            
+            # Get interval between two timstamps as timedelta object
+            diffUpper = upper - current
+            diffLower = current - lower
+
+            # Get interval between two timstamps in hours
+            diffUpper_in_hours = diffUpper.total_seconds() / 3600
+            diffLower_in_hours = diffLower.total_seconds() / 3600
+
+                        
+#             if diffLower_in_hours < 0.5:
+                
+
+            #rule 1
+            #might need recursion
+            if diffLower_in_hours > 0.5 and diffUpper_in_hours < 2:
+                lowerTime = upper + timedelta(hours=0) - timedelta(hours=0.5)
+                upperTime = upper + timedelta(hours=2)
+                mealData.append([lowerTime,upperTime])
+                i = i + 1
+
+
+            if diffLower_in_hours > 0.5 and diffUpper_in_hours >= 4.5:
+                lowerTime = current + timedelta(hours=2)
+                upperTime = current + timedelta(hours=4)
+                noMealData.append([lowerTime,upperTime])
+
+            #6 points rather than 4
+            if diffLower_in_hours > 0.5 and diffUpper_in_hours > 2.04:
+                lowerTime = current + timedelta(hours=0) - timedelta(hours=0.5)
+                upperTime = current + timedelta(hours=2)
+                mealData.append([lowerTime,upperTime])
+
+                
+            
+            #rule 2
+            if diffLower_in_hours < 0.5:
+                mealData = mealData[:-1]
+
+            if diffLower_in_hours < 0.5:
+                noMealData = noMealData[:-1]
+
+
+                
+
+            #has no impact on score
+            if diffLower_in_hours > 0.5 and diffUpper_in_hours >= 2 and diffUpper_in_hours <= 2.04:
+                lowerTime = current + timedelta(hours=0) - timedelta(hours=0.5)
+                upperTime = current + timedelta(hours=2)
+                mealData.append([lowerTime,upperTime])
+                
+                lowerTime = upper + timedelta(hours=0) - timedelta(hours=0.5)
+                upperTime = upper + timedelta(hours=2)
+                mealData.append([lowerTime,upperTime])
+                
+                i = i + 1
+                #noMealData.append(data[i])
+            
+            
+            i = i+1
+
+
+
             
     
     return mealData, noMealData
+            
 
 # In[176]:
-mealData, noMealData = extraction(DataClean)
-mealData2, noMealData2 = extraction(DataClean2)
-
-meals = trimDates(mealData,0,2, 0.5)
-noMeals = trimDates(noMealData,2,4,0)
+meals, noMeals = extraction(DataClean)
+meals2, noMeals2 = extraction(DataClean2)
 
 
-meals2 = trimDates(mealData2,0,2,0.5)
-noMeals2 = trimDates(noMealData2,2,4,0)
-
-#print(meals[0])
-#print(len(meals))
+#print(len(meals) + len(meals2))
+#print(len(noMeals) + len(noMeals2))
 
 # In[177]:
 
@@ -797,7 +832,6 @@ noMealpreFeatureData2 = dataForFeatures(CGMDateAndFood2, noMeals2)
 
 # In[180]:
 
-
 #print(mealpreFeatureData[0][1])
 #print(len(noMealpreFeatureData))
 #print(max(mealpreFeatureData[0][1]) - min(mealpreFeatureData[0][1]))
@@ -818,9 +852,11 @@ noMeal = Features(noMealpreFeatureData)
 meal2 = Features(mealpreFeatureData2)
 noMeal2 = Features(noMealpreFeatureData2)
 
+
+noMeal = noMeal[1:29]
+noMeal2 = noMeal2[1:29]
 #print(meal[0])
 #print(features[0])
-
 
 
 # In[ ]:
